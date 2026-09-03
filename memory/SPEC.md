@@ -18,6 +18,8 @@ Seaweed es un videojuego web retro 16-bit para limpiar una zona de anidación de
 6. El menú muestra la firma de autoría y abre un modal de acción local con enlaces externos a tres organizaciones de Cancún.
 7. El HUD muestra un combo de capturas seguidas, que vuelve a cero cuando se pierde un objeto.
 8. El menú abre un modal amplio “Deja tu opinión” con el Padlet público incrustado y un enlace de respaldo para abrirlo en una pestaña nueva.
+9. Game Over ofrece el mismo acceso a opiniones y el modal avisa que toda publicación será visible para la comunidad.
+10. El menú destaca “Opiniones públicas” sin mostrar una cifra: Padlet no ofrece conteo público oficial sin API key/servidor, y la app no inventa datos ni expone credenciales.
 
 ## Auth y roles
 No hay autenticación ni roles. El apodo es anónimo y solo identifica la puntuación pública.
