@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, ExternalLink, Gamepad2, Heart, Info, Leaf, LockKeyhole, Trophy, Volume2, VolumeX, Waves, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
@@ -8,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/sonner";
-import { apiGet, apiPost } from "@/lib/api";
-import { queryClient } from "@/lib/queryClient";
-import type { ImpactStats, ScoreRecord, ScoreSubmit } from "@/lib/types";
+import type { ImpactStats, ScoreRecord } from "@/lib/types";
 
 type Stage = "ready" | "playing" | "over";
 type ItemKind = "bottle" | "can" | "ring" | "seaweed";
@@ -39,6 +36,57 @@ const ECO_FACTS = [
   "Los anillos plásticos pueden atrapar aves y animales marinos. Retirarlos y cortarlos antes de desecharlos reduce ese riesgo.",
 ];
 const EMPTY_IMPACT: ImpactStats = { total_games: 0, total_cleanup_points: 0, leaderboard: [] };
+const GAME_STATE_KEY = "seaweed.local.game-state.v1";
+const IMPACT_KEY = "seaweed.local.impact.v1";
+
+interface LocalGameState {
+  nickname: string;
+  lives: number;
+  score: number;
+  stage: Stage;
+}
+
+function readLocalJson<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const stored = window.localStorage.getItem(key);
+    return stored ? (JSON.parse(stored) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function getInitialGameState(): LocalGameState {
+  const stored = readLocalJson<Partial<LocalGameState>>(GAME_STATE_KEY, {});
+  return {
+    nickname: typeof stored.nickname === "string" ? stored.nickname : "",
+    lives: typeof stored.lives === "number" ? Math.max(0, Math.min(7, stored.lives)) : 7,
+    score: typeof stored.score === "number" ? Math.max(0, stored.score) : 0,
+    stage: stored.stage === "playing" || stored.stage === "over" ? stored.stage : "ready",
+  };
+}
+
+function getInitialImpact(): ImpactStats {
+  const stored = readLocalJson<Partial<ImpactStats>>(IMPACT_KEY, {});
+  if (!Array.isArray(stored.leaderboard)) return EMPTY_IMPACT;
+  return {
+    total_games: typeof stored.total_games === "number" ? stored.total_games : 0,
+    total_cleanup_points: typeof stored.total_cleanup_points === "number" ? stored.total_cleanup_points : 0,
+    leaderboard: stored.leaderboard.slice(0, 10) as ScoreRecord[],
+  };
+}
+
+function localId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function saveLocalScore(record: ScoreRecord): ImpactStats {
+  const current = getInitialImpact();
+  const leaderboard = [...current.leaderboard, record].sort((a, b) => b.score - a.score).slice(0, 10);
+  const next = { total_games: current.total_games + 1, total_cleanup_points: current.total_cleanup_points + record.score, leaderboard };
+  window.localStorage.setItem(IMPACT_KEY, JSON.stringify(next));
+  return next;
+}
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("es-ES").format(value);
@@ -81,8 +129,8 @@ function WoodenPanel({ children, className = "", testId }: { children: ReactNode
 
 function ImpactModal({ impact, onClose }: { impact: ImpactStats; onClose: () => void }) {
   return <div className="modal-backdrop" data-testid="impact-modal-backdrop">
-    <section aria-label="Impacto Global" aria-modal="true" className="modal-card impact-modal" data-testid="impact-modal" role="dialog">
-      <div className="modal-heading"><div><p className="modal-kicker" data-testid="impact-modal-kicker">REGISTRO DE LA MAREA</p><h2 data-testid="impact-modal-title">Impacto Global</h2></div><Button aria-label="Cerrar impacto global" className="modal-close" data-testid="impact-modal-close" onClick={onClose} type="button"><X size={19} /></Button></div>
+    <section aria-label="Impacto Local" aria-modal="true" className="modal-card impact-modal" data-testid="impact-modal" role="dialog">
+      <div className="modal-heading"><div><p className="modal-kicker" data-testid="impact-modal-kicker">REGISTRO DE ESTE NAVEGADOR</p><h2 data-testid="impact-modal-title">Impacto Local</h2></div><Button aria-label="Cerrar impacto local" className="modal-close" data-testid="impact-modal-close" onClick={onClose} type="button"><X size={19} /></Button></div>
       <div className="impact-modal-stats"><div data-testid="impact-games-card"><span>PARTIDAS TOTALES</span><strong data-testid="impact-total-games">{formatNumber(impact.total_games)}</strong></div><div data-testid="impact-trash-card"><span>PUNTOS DE LIMPIEZA</span><strong data-testid="impact-total-trash">{formatNumber(impact.total_cleanup_points)}</strong></div></div>
       <div className="modal-leaderboard" data-testid="leaderboard-table"><div className="leader-row leader-head" data-testid="leaderboard-header-row"><span>#</span><span>RESCATISTA</span><span>PUNTOS</span></div>{impact.leaderboard.length === 0 ? <div className="empty-leaderboard" data-testid="leaderboard-empty"><Waves size={18} /><span>Aún no hay partidas. Sé la primera ola.</span></div> : impact.leaderboard.map((record, index) => <div className="leader-row" data-testid={`leaderboard-row-${index + 1}`} key={record.id}><span className="rank-number" data-testid={`leaderboard-rank-${index + 1}`}>{String(index + 1).padStart(2, "0")}</span><span className="leader-name" data-testid={`leaderboard-name-${index + 1}`}>{record.nickname}</span><strong data-testid={`leaderboard-score-${index + 1}`}>{formatNumber(record.score)}</strong></div>)}</div>
       <p className="modal-privacy" data-testid="impact-modal-privacy"><LockKeyhole size={13} /> Solo apodo y puntuación · Sin fechas ni horas</p>
@@ -118,39 +166,32 @@ function ActionsModal({ onClose }: { onClose: () => void }) {
 }
 
 export default function Home() {
-  const [nickname, setNickname] = useState("");
-  const [stage, setStage] = useState<Stage>("ready");
+  const [initialGame] = useState(getInitialGameState);
+  const [nickname, setNickname] = useState(initialGame.nickname);
+  const [stage, setStage] = useState<Stage>(initialGame.stage);
   const [menuModal, setMenuModal] = useState<MenuModal>(null);
-  const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(7);
+  const [score, setScore] = useState(initialGame.score);
+  const [lives, setLives] = useState(initialGame.lives);
   const [collected, setCollected] = useState(0);
   const [combo, setCombo] = useState(0);
   const [playerX, setPlayerX] = useState(0.5);
   const [items, setItems] = useState<FallingItem[]>([]);
   const [soundOn, setSoundOn] = useState(true);
   const [ecoFact, setEcoFact] = useState(ECO_FACTS[0]);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(initialGame.stage === "over" ? "saved" : "idle");
+  const [impact, setImpact] = useState<ImpactStats>(getInitialImpact);
   const worldRef = useRef<HTMLDivElement>(null);
   const playerXRef = useRef(0.5);
   const itemsRef = useRef<FallingItem[]>([]);
-  const livesRef = useRef(7);
-  const scoreRef = useRef(0);
+  const livesRef = useRef(initialGame.lives);
+  const scoreRef = useRef(initialGame.score);
   const collectedRef = useRef(0);
   const comboRef = useRef(0);
-  const nicknameRef = useRef("");
+  const nicknameRef = useRef(initialGame.nickname);
   const itemIdRef = useRef(0);
   const lastFrameRef = useRef(0);
   const spawnTimerRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const saveScoreMutationRef = useRef<((payload: ScoreSubmit) => void) | null>(null);
-
-  const impactQuery = useQuery({ queryKey: ["impact"], queryFn: () => apiGet<ImpactStats>("/scores/impact"), retry: false });
-  const saveScore = useMutation({
-    mutationFn: (payload: ScoreSubmit) => apiPost<ScoreRecord>("/scores", payload),
-    onSuccess: async () => { setSaveState("saved"); await queryClient.invalidateQueries({ queryKey: ["impact"] }); },
-    onError: () => { setSaveState("error"); toast.error("No pudimos guardar la partida. Inténtalo de nuevo."); },
-  });
-  saveScoreMutationRef.current = saveScore.mutate;
 
   const playSound = useCallback((type: "catch" | "sargassum" | "lose" | "over" | "click") => {
     if (!soundOn) return;
@@ -166,7 +207,14 @@ export default function Home() {
 
   const finishGame = useCallback(() => {
     setStage("over"); setEcoFact(ECO_FACTS[Math.floor(Math.random() * ECO_FACTS.length)]); setSaveState("saving"); playSound("over");
-    saveScoreMutationRef.current?.({ nickname: nicknameRef.current, score: scoreRef.current, collected_count: collectedRef.current });
+    try {
+      const nextImpact = saveLocalScore({ id: localId(), nickname: nicknameRef.current, score: scoreRef.current, collected_count: collectedRef.current });
+      setImpact(nextImpact);
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
+      toast.error("No pudimos guardar la partida en este navegador.");
+    }
   }, [playSound]);
 
   const movePlayer = useCallback((direction: -1 | 1) => { const next = Math.max(0.08, Math.min(0.92, playerXRef.current + direction * 0.08)); playerXRef.current = next; setPlayerX(next); }, []);
@@ -199,7 +247,14 @@ export default function Home() {
 
   useEffect(() => { const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuModal(null); }; window.addEventListener("keydown", closeOnEscape); return () => window.removeEventListener("keydown", closeOnEscape); }, []);
 
-  const impact = impactQuery.data ?? EMPTY_IMPACT;
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(GAME_STATE_KEY, JSON.stringify({ nickname, lives, score, stage } satisfies LocalGameState));
+    } catch {
+      toast.error("El navegador bloqueó el guardado local de la partida.");
+    }
+  }, [lives, nickname, score, stage]);
+
   const bestScore = useMemo(() => impact.leaderboard[0]?.score ?? 0, [impact.leaderboard]);
 
   const beginGame = useCallback((cleanName: string) => {
@@ -221,12 +276,12 @@ export default function Home() {
       <div className="menu-scene" data-testid="menu-scene"><div className="menu-sun" data-testid="menu-sun" /><div className="menu-wave menu-wave-one" data-testid="menu-wave-one" /><div className="menu-wave menu-wave-two" data-testid="menu-wave-two" /><div className="menu-turtle" data-testid="menu-turtle"><span /></div></div>
       <div className="menu-brand" data-testid="menu-brand"><p data-testid="menu-kicker">JUEGO ARCADE ECOLÓGICO</p><h1 data-testid="page-title">SEAWEED</h1><p data-testid="menu-tagline">Limpia la costa · Salva el viaje</p></div>
       <WoodenPanel className="menu-card" testId="menu-card"><div className="panel-nail nail-left" data-testid="panel-nail-left" /><div className="panel-nail nail-right" data-testid="panel-nail-right" /><div className="panel-kicker" data-testid="start-panel-kicker">NUEVA PARTIDA</div><h2 data-testid="start-panel-title">¿Quién está<br /><span>al timón?</span></h2><p className="panel-copy" data-testid="start-panel-copy">Elige un apodo y conviértete en guardián de la playa.</p><form className="nickname-form" data-testid="nickname-form" onSubmit={startGame}><label data-testid="nickname-label" htmlFor="nickname">TU APODO</label><Input autoComplete="off" data-testid="nickname-input" id="nickname" maxLength={12} onChange={(event) => setNickname(event.target.value)} placeholder="Ej. OLA VERDE" value={nickname} /><Button className="start-button" data-testid="start-game-button" type="submit"><Gamepad2 size={17} strokeWidth={3} /> JUGAR</Button></form><div className="menu-best-score" data-testid="best-score"><span>MEJOR RESCATE</span><strong>{bestScore ? formatNumber(bestScore) : "—"}</strong></div></WoodenPanel>
-      <nav className="menu-actions" aria-label="Menú Seaweed" data-testid="menu-actions"><Button className="menu-action-button" data-testid="impact-open-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={17} /> IMPACTO GLOBAL</Button><Button className="menu-action-button" data-testid="instructions-open-button" onClick={() => setMenuModal("instructions")} type="button"><BookOpen size={17} /> INSTRUCCIONES</Button><Button className="menu-action-button menu-action-primary" data-testid="actions-open-button" onClick={() => setMenuModal("actions")} type="button"><Leaf size={17} /> ¡PASA A LA ACCIÓN EN CANCÚN! 🐢</Button></nav>
+      <nav className="menu-actions" aria-label="Menú Seaweed" data-testid="menu-actions"><Button className="menu-action-button" data-testid="impact-open-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={17} /> IMPACTO LOCAL</Button><Button className="menu-action-button" data-testid="instructions-open-button" onClick={() => setMenuModal("instructions")} type="button"><BookOpen size={17} /> INSTRUCCIONES</Button><Button className="menu-action-button menu-action-primary" data-testid="actions-open-button" onClick={() => setMenuModal("actions")} type="button"><Leaf size={17} /> ¡PASA A LA ACCIÓN EN CANCÚN! 🐢</Button></nav>
       <p className="author-signature" data-testid="author-signature">Creado por: ANETTE SUGEY LÓPEZ PÉREZ | #SOY VOLUNTARIA DE CEFODEH</p>
-      <p className="menu-privacy" data-testid="privacy-note"><LockKeyhole size={13} /> Sin registro · Tu apodo identifica la puntuación</p>
+      <p className="menu-privacy" data-testid="privacy-note"><LockKeyhole size={13} /> Datos guardados solo en este navegador</p>
     </section> : <section className="game-screen" data-testid="game-screen">
       <div className="game-screen-heading" data-testid="game-screen-heading"><div><p className="eyebrow" data-testid="game-eyebrow">ZONA DE ANIDACIÓN // SECTOR 07</p><h1 data-testid="game-title">Marea de rescate</h1></div><div className="game-live-label" data-testid="game-live-label"><span className="live-dot" /> limpia el camino al mar</div></div>
-      <div className="game-frame" data-testid="game-frame"><div className="game-hud" data-testid="game-hud"><div className="hud-block" data-testid="hud-lives"><span className="hud-label" data-testid="hud-lives-label">VIDAS</span><HeartMeter lives={lives} /></div><div className="combo-indicator" data-testid="combo-indicator" aria-label={`${combo} capturas seguidas`}><span data-testid="combo-label">COMBO</span><strong data-testid="combo-value">x{combo}</strong></div><div className="hud-divider" data-testid="hud-divider" /><div className="hud-block score-block" data-testid="hud-score"><span className="hud-label" data-testid="hud-score-label">RESCATE</span><strong data-testid="score-display">{formatNumber(score).padStart(4, "0")}</strong><span className="score-unit" data-testid="score-unit">PUNTOS</span></div><div className="hud-divider hud-divider-right" data-testid="hud-divider-right" /><div className="hud-block collected-block" data-testid="hud-collected"><span className="hud-label" data-testid="hud-collected-label">HALLAZGOS</span><strong data-testid="collected-display">{collected}</strong></div></div><div className="game-world" data-testid="game-canvas" ref={worldRef} role="application" aria-label="Zona de juego Seaweed"><TurtleScene />{items.map((item) => <FallingSprite item={item} key={item.id} />)}<div className="player-boat" data-testid="player-boat" style={{ left: `${playerX * 100}%` }}><span className="boat-rim" /><span className="boat-net" /><span className="boat-flag">S</span></div>{stage === "over" && <div className="game-overlay game-over-overlay" data-testid="game-over-modal"><div className="game-over-card"><Badge data-testid="game-over-badge">MISIÓN COMPLETADA</Badge><h2 data-testid="game-over-title">Marea baja,<br /><span>impacto alto.</span></h2><p data-testid="game-over-score-copy">{nickname}, limpiaste <strong>{formatNumber(score)} puntos</strong> de costa.</p><div className="eco-fact" data-testid="eco-fact-card"><Leaf size={19} /><div><span>TIP ECOLÓGICO</span><p>{ecoFact}</p></div></div><div className="save-status" data-testid="save-status">{saveState === "saving" ? "Guardando tu rescate..." : saveState === "saved" ? "✓ Rescate guardado en el impacto global" : saveState === "error" ? "No se pudo guardar; puedes reintentar" : ""}</div><div className="game-over-actions"><Button className="restart-button" data-testid="restart-game-button" onClick={restartGame} type="button">VOLVER A JUGAR <ChevronDown size={16} /></Button><Button className="table-button" data-testid="game-over-impact-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={16} /> VER TABLA GLOBAL</Button><Button className="table-button action-trigger" data-testid="game-over-actions-button" onClick={() => setMenuModal("actions")} type="button"><Leaf size={16} /> ¡PASA A LA ACCIÓN EN CANCÚN! 🐢</Button></div></div></div>}</div><div className="touch-controls" data-testid="touch-controls"><Button aria-label="Mover bote a la izquierda" className="touch-button" data-testid="mobile-left-btn" onClick={() => movePlayer(-1)} type="button"><ArrowLeft size={22} /></Button><span data-testid="touch-control-label">A / D · FLECHAS</span><Button aria-label="Mover bote a la derecha" className="touch-button" data-testid="mobile-right-btn" onClick={() => movePlayer(1)} type="button"><ArrowRight size={22} /></Button></div></div>
+      <div className="game-frame" data-testid="game-frame"><div className="game-hud" data-testid="game-hud"><div className="hud-block" data-testid="hud-lives"><span className="hud-label" data-testid="hud-lives-label">VIDAS</span><HeartMeter lives={lives} /></div><div className="combo-indicator" data-testid="combo-indicator" aria-label={`${combo} capturas seguidas`}><span data-testid="combo-label">COMBO</span><strong data-testid="combo-value">x{combo}</strong></div><div className="hud-divider" data-testid="hud-divider" /><div className="hud-block score-block" data-testid="hud-score"><span className="hud-label" data-testid="hud-score-label">RESCATE</span><strong data-testid="score-display">{formatNumber(score).padStart(4, "0")}</strong><span className="score-unit" data-testid="score-unit">PUNTOS</span></div><div className="hud-divider hud-divider-right" data-testid="hud-divider-right" /><div className="hud-block collected-block" data-testid="hud-collected"><span className="hud-label" data-testid="hud-collected-label">HALLAZGOS</span><strong data-testid="collected-display">{collected}</strong></div></div><div className="game-world" data-testid="game-canvas" ref={worldRef} role="application" aria-label="Zona de juego Seaweed"><TurtleScene />{items.map((item) => <FallingSprite item={item} key={item.id} />)}<div className="player-boat" data-testid="player-boat" style={{ left: `${playerX * 100}%` }}><span className="boat-rim" /><span className="boat-net" /><span className="boat-flag">S</span></div>{stage === "over" && <div className="game-overlay game-over-overlay" data-testid="game-over-modal"><div className="game-over-card"><Badge data-testid="game-over-badge">MISIÓN COMPLETADA</Badge><h2 data-testid="game-over-title">Marea baja,<br /><span>impacto alto.</span></h2><p data-testid="game-over-score-copy">{nickname}, limpiaste <strong>{formatNumber(score)} puntos</strong> de costa.</p><div className="eco-fact" data-testid="eco-fact-card"><Leaf size={19} /><div><span>TIP ECOLÓGICO</span><p>{ecoFact}</p></div></div><div className="save-status" data-testid="save-status">{saveState === "saving" ? "Guardando tu rescate..." : saveState === "saved" ? "✓ Rescate guardado en este navegador" : saveState === "error" ? "No se pudo guardar localmente" : ""}</div><div className="game-over-actions"><Button className="restart-button" data-testid="restart-game-button" onClick={restartGame} type="button">VOLVER A JUGAR <ChevronDown size={16} /></Button><Button className="table-button" data-testid="game-over-impact-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={16} /> VER TABLA LOCAL</Button><Button className="table-button action-trigger" data-testid="game-over-actions-button" onClick={() => setMenuModal("actions")} type="button"><Leaf size={16} /> ¡PASA A LA ACCIÓN EN CANCÚN! 🐢</Button></div></div></div>}</div><div className="touch-controls" data-testid="touch-controls"><Button aria-label="Mover bote a la izquierda" className="touch-button" data-testid="mobile-left-btn" onClick={() => movePlayer(-1)} type="button"><ArrowLeft size={22} /></Button><span data-testid="touch-control-label">A / D · FLECHAS</span><Button aria-label="Mover bote a la derecha" className="touch-button" data-testid="mobile-right-btn" onClick={() => movePlayer(1)} type="button"><ArrowRight size={22} /></Button></div></div>
       <p className="game-privacy" data-testid="game-privacy"><Info size={13} /> Partida anónima · Sin fechas ni horas en el marcador</p>
     </section>}
 
