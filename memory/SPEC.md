@@ -9,11 +9,11 @@ Seaweed es un videojuego web retro 16-bit para limpiar una zona de anidación de
 - `total_games` es el número de partidas guardadas y `total_cleanup_points` es la suma de las puntuaciones.
 
 ## Flujos clave
-1. Apodo corto sin registro → iniciar partida.
-2. Atrapar objetos que caen con A/D, flechas o controles táctiles.
+1. Menú principal centrado: apodo + JUGAR, con modales compactos para Impacto Global e Instrucciones.
+2. Gameplay unificado en el viewport: HUD integrado en el marco y controles A/D, flechas o táctiles.
 3. Cada objeto perdido resta una vida; al llegar a cero se guarda la partida.
-4. Game Over muestra puntuación, tip ecológico y estado de guardado.
-5. El panel Impacto Global actualiza métricas y Top 10.
+4. Game Over aparece como overlay dentro del mismo marco, con puntuación, tip ecológico, volver a jugar y tabla global.
+5. El modal Impacto Global actualiza métricas y Top 10 sin scroll de página ni fechas públicas.
 
 ## Auth y roles
 No hay autenticación ni roles. El apodo es anónimo y solo identifica la puntuación pública.
