@@ -1,0 +1,91 @@
+{
+  "project_identity": {
+    "title": "Seaweed",
+    "tagline": "Limpieza de playas y protección de tortugas marinas",
+    "theme": "Retro 16-Bit Pixel Art Arcade & Environmental Impact Dashboard",
+    "target_audience": "Gamers, eco-enthusiasts, and community players aiming for high scores while supporting sea turtle conservation"
+  },
+  "typography": {
+    "display_font": "Silkscreen, 'Pixelify Sans', 'Press Start 2P', monospace",
+    "heading_font": "'Pixelify Sans', 'Silkscreen', cursive, monospace",
+    "body_font": "monospace, 'Pixelify Sans', system-ui, sans-serif",
+    "google_fonts_import": "https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap",
+    "text_sizes": {
+      "h1": "text-3xl sm:text-4xl lg:text-5xl font-bold tracking-wider",
+      "h2": "text-xl sm:text-2xl lg:text-3xl font-bold tracking-wider",
+      "h3": "text-lg sm:text-xl font-bold",
+      "body": "text-sm sm:text-base font-medium",
+      "small": "text-xs font-mono uppercase tracking-widest"
+    }
+  },
+  "colors": {
+    "palette_name": "Organic 16-Bit Tropical Beach & High Contrast Marine",
+    "sand_beige": "#E6C594",
+    "sand_dark": "#C89F65",
+    "sea_turquoise": "#00A896",
+    "sea_light": "#17C3B2",
+    "sea_deep": "#028090",
+    "sargassum_olive": "#5B7036",
+    "sargassum_brown": "#4A3B2C",
+    "heart_red": "#FF4D4D",
+    "wood_dark": "#3D2314",
+    "wood_medium": "#5C3A21",
+    "wood_light": "#8B5E34",
+    "plastic_bottle_blue": "#38BDF8",
+    "can_red": "#EF4444",
+    "ring_plastic_cyan": "#06B6D4",
+    "pixel_outline": "#111827",
+    "ui_overlay_bg": "rgba(20, 30, 25, 0.88)"
+  },
+  "visual_enhancers": {
+    "pixel_rendering": "image-rendering: pixelated; image-rendering: crisp-edges;",
+    "wood_plank_border": "border-4 border-[#3D2314] bg-[#5C3A21] shadow-[inset_-4px_-4px_0px_#3D2314,inset_4px_4px_0px_#8B5E34]",
+    "pixel_button": "border-b-4 border-r-4 border-[#1E110A] active:border-b-0 active:border-r-0 active:translate-y-1 transition-all",
+    "item_outline": "drop-shadow-[1px_0_0_#111827] drop-shadow-[-1px_0_0_#111827] drop-shadow-[0_1px_0_#111827] drop-shadow-[0_-1px_0_#111827]",
+    "heart_life": "filter drop-shadow(0px 2px 0px #000)"
+  },
+  "sound_effects": {
+    "engine": "Native Web Audio API (Oscillators, GainNodes, Envelopes)",
+    "events": [
+      "catch_trash (High pitched synth pop chime)",
+      "catch_sargassum (Deep squishy organic chime)",
+      "lose_life (Low distorted buzz drop)",
+      "game_over (Retro 8-bit descending sad tune)",
+      "button_click (Classic 16-bit blip)"
+    ]
+  },
+  "layout_and_components": {
+    "start_screen": "NickName input form on rustic wood wooden sign, high score preview, how-to-play visual guide",
+    "game_canvas": "16-bit Pixel Art Canvas with animated sea wave layers, crawling baby sea turtles on sandy shoreline, nesting site flags,falling items (bottles, cans, plastic rings, sargassum), player basket/boat",
+    "hud": "7 Red pixel hearts (#FF4D4D) with black stroke, current score, combo multiplier, sound mute toggle",
+    "controls": "Keyboard A/D & Left/Right arrows + On-screen physical touch controls for mobile",
+    "game_over_modal": "Game summary, score submission confirmation, ecological fact popup, restart/leaderboard buttons",
+    "impact_dashboard": "Global stats (Total Games Played, Total Community Cleanup Count, Top 10 Leaderboard without dates/times)"
+  },
+  "privacy_rules": {
+    "date_time": "NEVER display dates or times on the public leaderboard or impact dashboard"
+  },
+  "testing_guidelines": {
+    "data_testid_attributes": [
+      "nickname-input",
+      "start-game-button",
+      "game-canvas",
+      "lives-indicator",
+      "score-display",
+      "mobile-left-btn",
+      "mobile-right-btn",
+      "sound-toggle-btn",
+      "game-over-modal",
+      "eco-fact-card",
+      "restart-game-button",
+      "leaderboard-table",
+      "impact-total-games",
+      "impact-total-trash"
+    ]
+  },
+  "image_urls": {
+    "turtle_sunset": "https://images.unsplash.com/photo-1495110265292-6a567e7246d5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwyfHxzZWElMjB0dXJ0bGUlMjBiZWFjaCUyMG9jZWFuJTIwc3Vuc2V0fGVufDB8fHx8MTc4ODQyMjc4OXww&ixlib=rb-4.1.0&q=85",
+    "turtle_hatchling": "https://images.unsplash.com/photo-1682629845763-e742a8783c5c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzV8MHwxfHNlYXJjaHwzfHxzZWElMjB0dXJ0bGUlMjBiZWFjaCUyMG9jZWFuJTIwc3Vuc2V0fGVufDB8fHx8MTc4ODQyMjc4OXww&ixlib=rb-4.1.0&q=85"
+  },
+  "instructions_to_main_agent": "Ensure pixel art CSS rendering rules are applied globally. Use Web Audio API for all retro game sounds. Persist player scores and metrics via FastAPI + MongoDB API. Ensure zero public dates/times are displayed on leaderboards."
+}
