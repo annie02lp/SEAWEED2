@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, ExternalLink, Gamepad2, Heart, Info, Leaf, LockKeyhole, Trophy, Volume2, VolumeX, Waves, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, ExternalLink, Gamepad2, Heart, Info, Leaf, LockKeyhole, MessageSquareText, Trophy, Volume2, VolumeX, Waves, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { toast } from "sonner";
@@ -11,7 +11,7 @@ import type { ImpactStats, ScoreRecord } from "@/lib/types";
 
 type Stage = "ready" | "playing" | "over";
 type ItemKind = "bottle" | "can" | "ring" | "seaweed";
-type MenuModal = "impact" | "instructions" | "actions" | null;
+type MenuModal = "impact" | "instructions" | "actions" | "feedback" | null;
 
 interface FallingItem {
   id: number;
@@ -38,6 +38,7 @@ const ECO_FACTS = [
 const EMPTY_IMPACT: ImpactStats = { total_games: 0, total_cleanup_points: 0, leaderboard: [] };
 const GAME_STATE_KEY = "seaweed.local.game-state.v1";
 const IMPACT_KEY = "seaweed.local.impact.v1";
+const PADLET_URL = "https://padlet.com/tresazulxre23/opiniones-del-juego-seaweed-s0238bxxb1ij9a9vpgkf";
 
 interface LocalGameState {
   nickname: string;
@@ -165,6 +166,18 @@ function ActionsModal({ onClose }: { onClose: () => void }) {
   </div>;
 }
 
+function FeedbackModal({ onClose }: { onClose: () => void }) {
+  return <div className="modal-backdrop padlet-backdrop" data-testid="feedback-modal-backdrop">
+    <section aria-label="Opiniones del juego Seaweed" aria-modal="true" className="modal-card feedback-modal" data-testid="feedback-modal" role="dialog">
+      <div className="modal-heading feedback-modal-heading"><div><p className="modal-kicker" data-testid="feedback-modal-kicker">MURO DE LA COMUNIDAD</p><h2 data-testid="feedback-modal-title">Deja tu opinión</h2></div><div className="feedback-heading-actions"><a className="padlet-external-link" data-testid="padlet-external-link" href={PADLET_URL} rel="noopener noreferrer" target="_blank">Abrir en Padlet <ExternalLink size={14} /></a><Button aria-label="Cerrar opiniones" className="modal-close" data-testid="feedback-modal-close" onClick={onClose} type="button"><X size={19} /></Button></div></div>
+      <p className="feedback-modal-copy" data-testid="feedback-modal-copy">Comparte públicamente qué te pareció Seaweed y qué aprendiste sobre el cuidado de nuestras costas.</p>
+      <div className="padlet-frame-shell" data-testid="padlet-frame-shell">
+        <iframe allow="fullscreen" className="padlet-frame" data-testid="padlet-iframe" loading="lazy" referrerPolicy="strict-origin-when-cross-origin" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts" src={PADLET_URL} title="Opiniones del juego Seaweed en Padlet" />
+      </div>
+    </section>
+  </div>;
+}
+
 export default function Home() {
   const [initialGame] = useState(getInitialGameState);
   const [nickname, setNickname] = useState(initialGame.nickname);
@@ -276,7 +289,7 @@ export default function Home() {
       <div className="menu-scene" data-testid="menu-scene"><div className="menu-sun" data-testid="menu-sun" /><div className="menu-wave menu-wave-one" data-testid="menu-wave-one" /><div className="menu-wave menu-wave-two" data-testid="menu-wave-two" /><div className="menu-turtle" data-testid="menu-turtle"><span /></div></div>
       <div className="menu-brand" data-testid="menu-brand"><p data-testid="menu-kicker">JUEGO ARCADE ECOLÓGICO</p><h1 data-testid="page-title">SEAWEED</h1><p data-testid="menu-tagline">Limpia la costa · Salva el viaje</p></div>
       <WoodenPanel className="menu-card" testId="menu-card"><div className="panel-nail nail-left" data-testid="panel-nail-left" /><div className="panel-nail nail-right" data-testid="panel-nail-right" /><div className="panel-kicker" data-testid="start-panel-kicker">NUEVA PARTIDA</div><h2 data-testid="start-panel-title">¿Quién está<br /><span>al timón?</span></h2><p className="panel-copy" data-testid="start-panel-copy">Elige un apodo y conviértete en guardián de la playa.</p><form className="nickname-form" data-testid="nickname-form" onSubmit={startGame}><label data-testid="nickname-label" htmlFor="nickname">TU APODO</label><Input autoComplete="off" data-testid="nickname-input" id="nickname" maxLength={12} onChange={(event) => setNickname(event.target.value)} placeholder="Ej. OLA VERDE" value={nickname} /><Button className="start-button" data-testid="start-game-button" type="submit"><Gamepad2 size={17} strokeWidth={3} /> JUGAR</Button></form><div className="menu-best-score" data-testid="best-score"><span>MEJOR RESCATE</span><strong>{bestScore ? formatNumber(bestScore) : "—"}</strong></div></WoodenPanel>
-      <nav className="menu-actions" aria-label="Menú Seaweed" data-testid="menu-actions"><Button className="menu-action-button" data-testid="impact-open-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={17} /> IMPACTO LOCAL</Button><Button className="menu-action-button" data-testid="instructions-open-button" onClick={() => setMenuModal("instructions")} type="button"><BookOpen size={17} /> INSTRUCCIONES</Button><Button className="menu-action-button menu-action-primary" data-testid="actions-open-button" onClick={() => setMenuModal("actions")} type="button"><Leaf size={17} /> ¡PASA A LA ACCIÓN EN CANCÚN! 🐢</Button></nav>
+      <nav className="menu-actions" aria-label="Menú Seaweed" data-testid="menu-actions"><Button className="menu-action-button" data-testid="impact-open-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={17} /> IMPACTO LOCAL</Button><Button className="menu-action-button" data-testid="instructions-open-button" onClick={() => setMenuModal("instructions")} type="button"><BookOpen size={17} /> INSTRUCCIONES</Button><Button className="menu-action-button feedback-action" data-testid="feedback-open-button" onClick={() => setMenuModal("feedback")} type="button"><MessageSquareText size={17} /> DEJA TU OPINIÓN</Button><Button className="menu-action-button menu-action-primary" data-testid="actions-open-button" onClick={() => setMenuModal("actions")} type="button"><Leaf size={17} /> ¡PASA A LA ACCIÓN EN CANCÚN! 🐢</Button></nav>
       <p className="author-signature" data-testid="author-signature">Creado por: ANETTE SUGEY LÓPEZ PÉREZ | #SOY VOLUNTARIA DE CEFODEH</p>
       <p className="menu-privacy" data-testid="privacy-note"><LockKeyhole size={13} /> Datos guardados solo en este navegador</p>
     </section> : <section className="game-screen" data-testid="game-screen">
@@ -288,5 +301,6 @@ export default function Home() {
     {menuModal === "impact" && <ImpactModal impact={impact} onClose={() => setMenuModal(null)} />}
     {menuModal === "instructions" && <InstructionsModal onClose={() => setMenuModal(null)} />}
     {menuModal === "actions" && <ActionsModal onClose={() => setMenuModal(null)} />}
+    {menuModal === "feedback" && <FeedbackModal onClose={() => setMenuModal(null)} />}
   </main>;
 }
