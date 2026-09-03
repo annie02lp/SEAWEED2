@@ -14,6 +14,8 @@ Seaweed es un videojuego web retro 16-bit para limpiar una zona de anidación de
 3. Cada objeto perdido resta una vida; al llegar a cero se guarda la partida.
 4. Game Over aparece como overlay dentro del mismo marco, con puntuación, tip ecológico, volver a jugar y tabla global.
 5. El modal Impacto Global actualiza métricas y Top 10 sin scroll de página ni fechas públicas.
+6. El menú muestra la firma de autoría y abre un modal de acción local con enlaces externos a tres organizaciones de Cancún.
+7. El HUD muestra un combo de capturas seguidas, que vuelve a cero cuando se pierde un objeto.
 
 ## Auth y roles
 No hay autenticación ni roles. El apodo es anónimo y solo identifica la puntuación pública.

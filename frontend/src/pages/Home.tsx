@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, Gamepad2, Heart, Info, Leaf, LockKeyhole, Trophy, Volume2, VolumeX, Waves, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, ExternalLink, Gamepad2, Heart, Info, Leaf, LockKeyhole, Trophy, Volume2, VolumeX, Waves, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import type { ImpactStats, ScoreRecord, ScoreSubmit } from "@/lib/types";
 
 type Stage = "ready" | "playing" | "over";
 type ItemKind = "bottle" | "can" | "ring" | "seaweed";
-type MenuModal = "impact" | "instructions" | null;
+type MenuModal = "impact" | "instructions" | "actions" | null;
 
 interface FallingItem {
   id: number;
@@ -100,6 +100,23 @@ function InstructionsModal({ onClose }: { onClose: () => void }) {
   </div>;
 }
 
+function ActionsModal({ onClose }: { onClose: () => void }) {
+  const initiatives = [
+    { label: "Flora, Fauna y Cultura de México A.C.", href: "https://www.florafaunaycultura.org/", testId: "initiative-flora-link" },
+    { label: "Fundación Palace", href: "https://www.fundacionpalace.org/", testId: "initiative-palace-link" },
+    { label: "ZOFEMAT / Limpieza de Playas Cancún", href: "https://cancun.gob.mx/", testId: "initiative-zofemat-link" },
+  ];
+
+  return <div className="modal-backdrop" data-testid="actions-modal-backdrop">
+    <section aria-label="Iniciativas reales en Cancún" aria-modal="true" className="modal-card actions-modal" data-testid="actions-modal" role="dialog">
+      <div className="modal-heading"><div><p className="modal-kicker" data-testid="actions-modal-kicker">MISIÓN FUERA DE LA PANTALLA</p><h2 data-testid="actions-modal-title">Pasa a la acción 🐢</h2></div><Button aria-label="Cerrar iniciativas de Cancún" className="modal-close" data-testid="actions-modal-close" onClick={onClose} type="button"><X size={19} /></Button></div>
+      <p className="actions-modal-copy" data-testid="actions-modal-copy">El cuidado de nuestras costas no se queda en la pantalla. Súmate al cambio en Cancún:</p>
+      <div className="initiative-links" data-testid="initiative-links">{initiatives.map((initiative) => <a className="initiative-link" data-testid={initiative.testId} href={initiative.href} key={initiative.href} rel="noreferrer" target="_blank"><span>{initiative.label}</span><ExternalLink size={17} /></a>)}</div>
+      <p className="actions-modal-note" data-testid="actions-modal-note"><Leaf size={14} /> Cada voluntariado ayuda a mantener vivo el camino al mar.</p>
+    </section>
+  </div>;
+}
+
 export default function Home() {
   const [nickname, setNickname] = useState("");
   const [stage, setStage] = useState<Stage>("ready");
@@ -107,6 +124,7 @@ export default function Home() {
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(7);
   const [collected, setCollected] = useState(0);
+  const [combo, setCombo] = useState(0);
   const [playerX, setPlayerX] = useState(0.5);
   const [items, setItems] = useState<FallingItem[]>([]);
   const [soundOn, setSoundOn] = useState(true);
@@ -118,6 +136,7 @@ export default function Home() {
   const livesRef = useRef(7);
   const scoreRef = useRef(0);
   const collectedRef = useRef(0);
+  const comboRef = useRef(0);
   const nicknameRef = useRef("");
   const itemIdRef = useRef(0);
   const lastFrameRef = useRef(0);
@@ -162,9 +181,9 @@ export default function Home() {
       spawnTimerRef.current += elapsed;
       let nextItems = itemsRef.current.map((item) => ({ ...item, y: item.y + item.speed * (elapsed / 16.67) }));
       if (spawnTimerRef.current > 850) { spawnTimerRef.current = 0; const kind = ITEM_KINDS[Math.floor(Math.random() * ITEM_KINDS.length)]; nextItems = [...nextItems, { id: itemIdRef.current++, kind, x: 0.08 + Math.random() * 0.84, y: -42, speed: 2.25 + Math.min(scoreRef.current * 0.006, 1.35), size: kind === "seaweed" ? 48 : 38 }]; }
-      let nextLives = livesRef.current; let nextScore = scoreRef.current; let nextCollected = collectedRef.current; const survivingItems: FallingItem[] = [];
-      nextItems.forEach((item) => { const inCatchZone = item.y > worldHeight - 142 && item.y < worldHeight - 62; const closeToBoat = Math.abs(item.x * worldWidth - playerXRef.current * worldWidth) < 88; if (inCatchZone && closeToBoat) { nextScore += ITEM_META[item.kind].points; nextCollected += 1; playSound(item.kind === "seaweed" ? "sargassum" : "catch"); return; } if (item.y > worldHeight - 32) { nextLives -= 1; playSound("lose"); return; } survivingItems.push(item); });
-      itemsRef.current = survivingItems; livesRef.current = nextLives; scoreRef.current = nextScore; collectedRef.current = nextCollected; setItems(survivingItems); setLives(nextLives); setScore(nextScore); setCollected(nextCollected);
+      let nextLives = livesRef.current; let nextScore = scoreRef.current; let nextCollected = collectedRef.current; let nextCombo = comboRef.current; const survivingItems: FallingItem[] = [];
+      nextItems.forEach((item) => { const inCatchZone = item.y > worldHeight - 142 && item.y < worldHeight - 62; const closeToBoat = Math.abs(item.x * worldWidth - playerXRef.current * worldWidth) < 88; if (inCatchZone && closeToBoat) { nextScore += ITEM_META[item.kind].points; nextCollected += 1; nextCombo += 1; playSound(item.kind === "seaweed" ? "sargassum" : "catch"); return; } if (item.y > worldHeight - 32) { nextLives -= 1; nextCombo = 0; playSound("lose"); return; } survivingItems.push(item); });
+      itemsRef.current = survivingItems; livesRef.current = nextLives; scoreRef.current = nextScore; collectedRef.current = nextCollected; comboRef.current = nextCombo; setItems(survivingItems); setLives(nextLives); setScore(nextScore); setCollected(nextCollected); setCombo(nextCombo);
       if (nextLives <= 0) { finishGame(); return; }
       animationFrame = requestAnimationFrame(tick);
     };
@@ -184,7 +203,7 @@ export default function Home() {
   const bestScore = useMemo(() => impact.leaderboard[0]?.score ?? 0, [impact.leaderboard]);
 
   const beginGame = useCallback((cleanName: string) => {
-    nicknameRef.current = cleanName; setNickname(cleanName); setStage("playing"); setMenuModal(null); setScore(0); setLives(7); setCollected(0); setItems([]); setSaveState("idle"); scoreRef.current = 0; livesRef.current = 7; collectedRef.current = 0; itemsRef.current = []; playerXRef.current = 0.5; setPlayerX(0.5); playSound("click");
+    nicknameRef.current = cleanName; setNickname(cleanName); setStage("playing"); setMenuModal(null); setScore(0); setLives(7); setCollected(0); setCombo(0); setItems([]); setSaveState("idle"); scoreRef.current = 0; livesRef.current = 7; collectedRef.current = 0; comboRef.current = 0; itemsRef.current = []; playerXRef.current = 0.5; setPlayerX(0.5); playSound("click");
   }, [playSound]);
 
   const startGame = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const cleanName = nickname.trim().replace(/\s+/g, " "); if (cleanName.length < 2) { toast.error("Escribe un apodo de al menos 2 caracteres."); return; } beginGame(cleanName); };
@@ -202,15 +221,17 @@ export default function Home() {
       <div className="menu-scene" data-testid="menu-scene"><div className="menu-sun" data-testid="menu-sun" /><div className="menu-wave menu-wave-one" data-testid="menu-wave-one" /><div className="menu-wave menu-wave-two" data-testid="menu-wave-two" /><div className="menu-turtle" data-testid="menu-turtle"><span /></div></div>
       <div className="menu-brand" data-testid="menu-brand"><p data-testid="menu-kicker">JUEGO ARCADE ECOLÓGICO</p><h1 data-testid="page-title">SEAWEED</h1><p data-testid="menu-tagline">Limpia la costa · Salva el viaje</p></div>
       <WoodenPanel className="menu-card" testId="menu-card"><div className="panel-nail nail-left" data-testid="panel-nail-left" /><div className="panel-nail nail-right" data-testid="panel-nail-right" /><div className="panel-kicker" data-testid="start-panel-kicker">NUEVA PARTIDA</div><h2 data-testid="start-panel-title">¿Quién está<br /><span>al timón?</span></h2><p className="panel-copy" data-testid="start-panel-copy">Elige un apodo y conviértete en guardián de la playa.</p><form className="nickname-form" data-testid="nickname-form" onSubmit={startGame}><label data-testid="nickname-label" htmlFor="nickname">TU APODO</label><Input autoComplete="off" data-testid="nickname-input" id="nickname" maxLength={12} onChange={(event) => setNickname(event.target.value)} placeholder="Ej. OLA VERDE" value={nickname} /><Button className="start-button" data-testid="start-game-button" type="submit"><Gamepad2 size={17} strokeWidth={3} /> JUGAR</Button></form><div className="menu-best-score" data-testid="best-score"><span>MEJOR RESCATE</span><strong>{bestScore ? formatNumber(bestScore) : "—"}</strong></div></WoodenPanel>
-      <nav className="menu-actions" aria-label="Menú Seaweed" data-testid="menu-actions"><Button className="menu-action-button" data-testid="impact-open-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={17} /> IMPACTO GLOBAL</Button><Button className="menu-action-button" data-testid="instructions-open-button" onClick={() => setMenuModal("instructions")} type="button"><BookOpen size={17} /> INSTRUCCIONES</Button></nav>
+      <nav className="menu-actions" aria-label="Menú Seaweed" data-testid="menu-actions"><Button className="menu-action-button" data-testid="impact-open-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={17} /> IMPACTO GLOBAL</Button><Button className="menu-action-button" data-testid="instructions-open-button" onClick={() => setMenuModal("instructions")} type="button"><BookOpen size={17} /> INSTRUCCIONES</Button><Button className="menu-action-button menu-action-primary" data-testid="actions-open-button" onClick={() => setMenuModal("actions")} type="button"><Leaf size={17} /> ¡PASA A LA ACCIÓN EN CANCÚN! 🐢</Button></nav>
+      <p className="author-signature" data-testid="author-signature">Creado por: ANETTE SUGEY LÓPEZ PÉREZ | #SOY VOLUNTARIA DE CEFODEH</p>
       <p className="menu-privacy" data-testid="privacy-note"><LockKeyhole size={13} /> Sin registro · Tu apodo identifica la puntuación</p>
     </section> : <section className="game-screen" data-testid="game-screen">
       <div className="game-screen-heading" data-testid="game-screen-heading"><div><p className="eyebrow" data-testid="game-eyebrow">ZONA DE ANIDACIÓN // SECTOR 07</p><h1 data-testid="game-title">Marea de rescate</h1></div><div className="game-live-label" data-testid="game-live-label"><span className="live-dot" /> limpia el camino al mar</div></div>
-      <div className="game-frame" data-testid="game-frame"><div className="game-hud" data-testid="game-hud"><div className="hud-block" data-testid="hud-lives"><span className="hud-label" data-testid="hud-lives-label">VIDAS</span><HeartMeter lives={lives} /></div><div className="hud-divider" data-testid="hud-divider" /><div className="hud-block score-block" data-testid="hud-score"><span className="hud-label" data-testid="hud-score-label">RESCATE</span><strong data-testid="score-display">{formatNumber(score).padStart(4, "0")}</strong><span className="score-unit" data-testid="score-unit">PUNTOS</span></div><div className="hud-divider hud-divider-right" data-testid="hud-divider-right" /><div className="hud-block collected-block" data-testid="hud-collected"><span className="hud-label" data-testid="hud-collected-label">HALLAZGOS</span><strong data-testid="collected-display">{collected}</strong></div></div><div className="game-world" data-testid="game-canvas" ref={worldRef} role="application" aria-label="Zona de juego Seaweed"><TurtleScene />{items.map((item) => <FallingSprite item={item} key={item.id} />)}<div className="player-boat" data-testid="player-boat" style={{ left: `${playerX * 100}%` }}><span className="boat-rim" /><span className="boat-net" /><span className="boat-flag">S</span></div>{stage === "over" && <div className="game-overlay game-over-overlay" data-testid="game-over-modal"><div className="game-over-card"><Badge data-testid="game-over-badge">MISIÓN COMPLETADA</Badge><h2 data-testid="game-over-title">Marea baja,<br /><span>impacto alto.</span></h2><p data-testid="game-over-score-copy">{nickname}, limpiaste <strong>{formatNumber(score)} puntos</strong> de costa.</p><div className="eco-fact" data-testid="eco-fact-card"><Leaf size={19} /><div><span>TIP ECOLÓGICO</span><p>{ecoFact}</p></div></div><div className="save-status" data-testid="save-status">{saveState === "saving" ? "Guardando tu rescate..." : saveState === "saved" ? "✓ Rescate guardado en el impacto global" : saveState === "error" ? "No se pudo guardar; puedes reintentar" : ""}</div><div className="game-over-actions"><Button className="restart-button" data-testid="restart-game-button" onClick={restartGame} type="button">VOLVER A JUGAR <ChevronDown size={16} /></Button><Button className="table-button" data-testid="game-over-impact-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={16} /> VER TABLA GLOBAL</Button></div></div></div>}</div><div className="touch-controls" data-testid="touch-controls"><Button aria-label="Mover bote a la izquierda" className="touch-button" data-testid="mobile-left-btn" onClick={() => movePlayer(-1)} type="button"><ArrowLeft size={22} /></Button><span data-testid="touch-control-label">A / D · FLECHAS</span><Button aria-label="Mover bote a la derecha" className="touch-button" data-testid="mobile-right-btn" onClick={() => movePlayer(1)} type="button"><ArrowRight size={22} /></Button></div></div>
+      <div className="game-frame" data-testid="game-frame"><div className="game-hud" data-testid="game-hud"><div className="hud-block" data-testid="hud-lives"><span className="hud-label" data-testid="hud-lives-label">VIDAS</span><HeartMeter lives={lives} /></div><div className="combo-indicator" data-testid="combo-indicator" aria-label={`${combo} capturas seguidas`}><span data-testid="combo-label">COMBO</span><strong data-testid="combo-value">x{combo}</strong></div><div className="hud-divider" data-testid="hud-divider" /><div className="hud-block score-block" data-testid="hud-score"><span className="hud-label" data-testid="hud-score-label">RESCATE</span><strong data-testid="score-display">{formatNumber(score).padStart(4, "0")}</strong><span className="score-unit" data-testid="score-unit">PUNTOS</span></div><div className="hud-divider hud-divider-right" data-testid="hud-divider-right" /><div className="hud-block collected-block" data-testid="hud-collected"><span className="hud-label" data-testid="hud-collected-label">HALLAZGOS</span><strong data-testid="collected-display">{collected}</strong></div></div><div className="game-world" data-testid="game-canvas" ref={worldRef} role="application" aria-label="Zona de juego Seaweed"><TurtleScene />{items.map((item) => <FallingSprite item={item} key={item.id} />)}<div className="player-boat" data-testid="player-boat" style={{ left: `${playerX * 100}%` }}><span className="boat-rim" /><span className="boat-net" /><span className="boat-flag">S</span></div>{stage === "over" && <div className="game-overlay game-over-overlay" data-testid="game-over-modal"><div className="game-over-card"><Badge data-testid="game-over-badge">MISIÓN COMPLETADA</Badge><h2 data-testid="game-over-title">Marea baja,<br /><span>impacto alto.</span></h2><p data-testid="game-over-score-copy">{nickname}, limpiaste <strong>{formatNumber(score)} puntos</strong> de costa.</p><div className="eco-fact" data-testid="eco-fact-card"><Leaf size={19} /><div><span>TIP ECOLÓGICO</span><p>{ecoFact}</p></div></div><div className="save-status" data-testid="save-status">{saveState === "saving" ? "Guardando tu rescate..." : saveState === "saved" ? "✓ Rescate guardado en el impacto global" : saveState === "error" ? "No se pudo guardar; puedes reintentar" : ""}</div><div className="game-over-actions"><Button className="restart-button" data-testid="restart-game-button" onClick={restartGame} type="button">VOLVER A JUGAR <ChevronDown size={16} /></Button><Button className="table-button" data-testid="game-over-impact-button" onClick={() => setMenuModal("impact")} type="button"><Trophy size={16} /> VER TABLA GLOBAL</Button><Button className="table-button action-trigger" data-testid="game-over-actions-button" onClick={() => setMenuModal("actions")} type="button"><Leaf size={16} /> ¡PASA A LA ACCIÓN EN CANCÚN! 🐢</Button></div></div></div>}</div><div className="touch-controls" data-testid="touch-controls"><Button aria-label="Mover bote a la izquierda" className="touch-button" data-testid="mobile-left-btn" onClick={() => movePlayer(-1)} type="button"><ArrowLeft size={22} /></Button><span data-testid="touch-control-label">A / D · FLECHAS</span><Button aria-label="Mover bote a la derecha" className="touch-button" data-testid="mobile-right-btn" onClick={() => movePlayer(1)} type="button"><ArrowRight size={22} /></Button></div></div>
       <p className="game-privacy" data-testid="game-privacy"><Info size={13} /> Partida anónima · Sin fechas ni horas en el marcador</p>
     </section>}
 
     {menuModal === "impact" && <ImpactModal impact={impact} onClose={() => setMenuModal(null)} />}
     {menuModal === "instructions" && <InstructionsModal onClose={() => setMenuModal(null)} />}
+    {menuModal === "actions" && <ActionsModal onClose={() => setMenuModal(null)} />}
   </main>;
 }

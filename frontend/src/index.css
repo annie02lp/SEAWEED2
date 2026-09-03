@@ -174,3 +174,30 @@ kbd { min-width: 25px; padding: 4px 6px; border: 2px solid #132f35; background: 
   .menu-actions { bottom: 28px; gap: 6px; } .menu-action-button { padding: 7px 8px; font-size: 8px; } .menu-privacy { right: 50%; bottom: 8px; transform: translateX(50%); white-space: nowrap; font-size: 7px; }
   .game-screen { padding: 9px 8px 6px; } .game-screen-heading { padding-bottom: 6px; } .game-screen-heading h1 { font-size: 19px; } .game-live-label { font-size: 7px; } .game-screen .game-hud { min-height: 48px; flex-basis: 48px; padding: 6px 8px; gap: 6px; } .game-screen .game-world { min-height: 0; } .game-screen .touch-controls { min-height: 42px; flex-basis: 42px; } .game-privacy { display: none !important; } .game-screen .hud-label, .game-screen .score-unit { display: none; } .game-screen .score-block { margin-left: auto; } .game-screen .score-block strong, .game-screen .collected-block strong { font-size: 17px; } .game-screen .pixel-heart { width: 17px; height: 17px; } .game-over-card { padding: 22px 20px 19px; } .game-over-card h2 { font-size: 25px; } .game-over-card > p { font-size: 12px; } .eco-fact { margin: 14px 0 5px; padding: 10px; } .eco-fact p { font-size: 10px; } .game-over-actions { flex-direction: column; gap: 2px; } .game-over-actions .restart-button, .game-over-actions .table-button { min-height: 39px; font-size: 9px; } .modal-card { padding: 20px 17px; } .modal-heading h2 { font-size: 22px; } .impact-modal-stats strong { font-size: 20px; } .modal-leaderboard .leader-row { font-size: 9px; }
 }
+
+.combo-indicator { min-width: 58px; padding: 5px 7px; display: flex; flex-direction: column; align-items: center; gap: 1px; border: 2px solid #132f35; background: #ffcf5b; color: #132f35; box-shadow: 2px 2px 0 #081719; font-family: "IBM Plex Mono", monospace; line-height: 1; }
+.combo-indicator span { font-size: 7px; font-weight: 900; letter-spacing: .08em; }
+.combo-indicator strong { color: #007e7b; font-size: 15px; }
+.menu-actions { flex-wrap: wrap; max-width: min(680px, calc(100vw - 30px)); justify-content: center; }
+.menu-action-primary { background: #ffcf5b; }
+.author-signature { position: absolute; z-index: 6; bottom: 10px; left: 20px; margin: 0; color: #526a67; font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 900; letter-spacing: .03em; text-transform: uppercase; }
+.game-over-actions { flex-wrap: wrap; }
+.game-over-actions .action-trigger { flex-basis: 100%; }
+.actions-modal-copy { margin: 22px 0 17px; color: #31555a; font-size: 14px; line-height: 1.5; }
+.initiative-links { display: grid; gap: 11px; }
+.initiative-link { min-height: 53px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 3px solid #132f35; background: #007e7b; color: #f7e7c2; box-shadow: 4px 4px 0 #132f35; font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 900; text-decoration: none; }
+.initiative-link:hover { background: #00a896; color: #fff4d6; }
+.initiative-link:active { transform: translate(4px, 4px); box-shadow: none; }
+.initiative-link svg { flex: 0 0 auto; color: #ffcf5b; }
+.actions-modal-note { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 18px 0 0; color: #6a7e7b; font-family: "IBM Plex Mono", monospace; font-size: 9px; text-align: center; }
+@media (max-width: 620px) {
+  .menu-actions { bottom: 42px; max-width: calc(100vw - 24px); }
+  .menu-action-primary { flex-basis: 100%; }
+  .author-signature { right: 10px; bottom: 7px; left: 10px; font-size: 6px; text-align: center; white-space: nowrap; }
+  .menu-privacy { display: none; }
+  .combo-indicator { min-width: 48px; padding: 4px 5px; }
+  .combo-indicator span { font-size: 6px; }
+  .combo-indicator strong { font-size: 13px; }
+  .actions-modal-copy { font-size: 12px; }
+  .initiative-link { min-height: 48px; font-size: 9px; }
+}
